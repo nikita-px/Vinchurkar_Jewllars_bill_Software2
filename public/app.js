@@ -55,7 +55,13 @@ function validateBillItems() {
     }
     gwInp.value = gwClean;
 
-    if (swInp) swInp.value = cleanNum(swInp.value) || '0';
+    const swClean = cleanNum(swInp?.value);
+    const sw = parseFloat(swClean || '0');
+    if (sw >= gw) {
+      highlightError(swInp);
+      return { ok: false, msg: `Item #${i + 1}: Stone weight (${sw} g) must be less than Gross weight (${gw} g). If there are no stones, leave it as 0.` };
+    }
+    if (swInp) swInp.value = swClean || '0';
 
     const rateClean = cleanNum(rateInp?.value);
     const rate = parseFloat(rateClean || '0');
