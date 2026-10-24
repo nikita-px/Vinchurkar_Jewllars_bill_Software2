@@ -95,6 +95,13 @@ document.addEventListener('click', e => {
     return;
   }
 });
+document.addEventListener('change', e => {
+  if (e.target.dataset?.k === 'category') {
+    const item = e.target.closest('.item');
+    const nameInp = item?.querySelector('[data-k="name"]');
+    if (nameInp) nameInp.value = e.target.value;
+  }
+});
 async function go(v) {
   document.querySelectorAll('nav [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   try { await views[v](); } catch (e) { $('#main').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
@@ -119,7 +126,7 @@ const views = {
   },
   async bill() {
     const st = await api('/settings'); const cats = ['Gold bangles', 'Gold chain', 'Gold ring', 'Gold necklace', 'Gold earrings', 'Gold coin', 'Silver jewellery', 'Other jewellery'];
-    const itemHtml = () => `<div class="item"><div class="row">${inp('', 'Item name *', 'text', 'data-k="name" placeholder="e.g. Gold Ring"')}<label>Category<select data-k="category">${cats.map(c => `<option>${c}</option>`).join('')}</select></label>
+    const itemHtml = () => `<div class="item"><div class="row">${inp('', 'Item name *', 'text', 'data-k="name" value="Gold bangles"')}<label>Category<select data-k="category">${cats.map(c => `<option>${c}</option>`).join('')}</select></label>
       ${inp('', 'Gross weight (g) *', 'text', 'data-k="grossWeight" placeholder="e.g. 5.250"')}${inp('', 'Stone weight (g)', 'text', 'data-k="stoneWeight" value="0"')}${inp('', 'Gold rate / g (₹) *', 'text', 'data-k="rate" placeholder="e.g. 7500"')}
       <label>Making type<select data-k="makingType"><option value="FIXED">Fixed ₹</option><option value="PERCENT">% of gold value</option><option value="PER_GRAM">₹ per gram</option></select></label>
       ${inp('', 'Making value', 'text', 'data-k="making" value="0"')}${inp('', 'Stone charge ₹', 'text', 'data-k="stoneCharge" value="0"')}${inp('', 'Other charge ₹', 'text', 'data-k="otherCharge" value="0"')}
@@ -165,7 +172,7 @@ const views = {
 
       const v = validateBillItems(); if (!v.ok) return msg(v.msg);
 
-      const saveBtn = $('#save'); saveBtn.disabled = true; saveBtn.textContent = 'Generating PDF...'; msg('Saving invoice and generating bill...', true);
+      const saveBtn = $('#save'); saveBtn.disabled = true; saveBtn.textContent = '⏳ Saving invoice & generating bill...'; msg('Saving invoice and generating bill...', true);
       try {
         const r = await api('/invoices', 'POST', payload());
         const pdfUrl = `/api/invoices/${encodeURIComponent(r.invoiceNo)}/pdf`;
@@ -180,6 +187,7 @@ const views = {
               </div>
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <a href="${pdfUrl}" target="_blank" class="p" style="display:inline-flex;align-items:center;gap:6px;padding:12px 24px;text-decoration:none;border-radius:10px;font-size:15px">📄 View / Print PDF</a>
+                <a href="${pdfUrl}" download="${esc(r.invoiceNo)}.pdf" class="s" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;text-decoration:none;border-radius:10px;font-size:14px">📥 Download PDF</a>
                 <button class="s" id="nextBill" style="padding:10px 18px">+ Create Next Bill</button>
                 <button class="s" id="viewHist" style="padding:10px 18px">Invoice History</button>
               </div>
