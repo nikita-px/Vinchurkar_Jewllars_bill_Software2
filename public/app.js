@@ -18,6 +18,14 @@ function highlightError(inp) {
   inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
   inp.addEventListener('input', () => inp.classList.remove('input-invalid'), { once: true });
 }
+function cleanNum(v) {
+  let s = String(v ?? '').trim();
+  s = s.replace(/^(₹|rs\.?|\$)\s*/i, '');
+  s = s.replace(/[\s,₹$%]/g, '');
+  s = s.replace(/(g|gm|grams|kg|\/-)$/i, '');
+  return s.trim();
+}
+
 function validateBillItems() {
   const itemEls = document.querySelectorAll('#items .item');
   if (itemEls.length === 0) return { ok: false, msg: 'Please add at least one item using "+ Add item"' };
@@ -26,22 +34,51 @@ function validateBillItems() {
     const nameInp = el.querySelector('[data-k="name"]');
     const catSel = el.querySelector('[data-k="category"]');
     const gwInp = el.querySelector('[data-k="grossWeight"]');
+    const swInp = el.querySelector('[data-k="stoneWeight"]');
     const rateInp = el.querySelector('[data-k="rate"]');
+    const mtSel = el.querySelector('[data-k="makingType"]');
+    const mkInp = el.querySelector('[data-k="making"]');
     const taxInp = el.querySelector('[data-k="taxPercent"]');
+    const scInp = el.querySelector('[data-k="stoneCharge"]');
+    const ocInp = el.querySelector('[data-k="otherCharge"]');
+    const dcInp = el.querySelector('[data-k="discount"]');
+
     if (!nameInp?.value.trim()) {
       nameInp.value = catSel?.value || 'Gold Jewellery';
     }
-    const gw = parseFloat(gwInp?.value || '0');
-    if (!gwInp?.value.trim() || isNaN(gw) || gw <= 0) {
+
+    const gwClean = cleanNum(gwInp?.value);
+    const gw = parseFloat(gwClean || '0');
+    if (!gwClean || isNaN(gw) || gw <= 0) {
       highlightError(gwInp);
       return { ok: false, msg: `Item #${i + 1}: Please enter Gross weight in grams (e.g. 5.250)` };
     }
-    const rate = parseFloat(rateInp?.value || '0');
-    if (!rateInp?.value.trim() || isNaN(rate) || rate <= 0) {
+    gwInp.value = gwClean;
+
+    if (swInp) swInp.value = cleanNum(swInp.value) || '0';
+
+    const rateClean = cleanNum(rateInp?.value);
+    const rate = parseFloat(rateClean || '0');
+    if (!rateClean || isNaN(rate) || rate <= 0) {
       highlightError(rateInp);
       return { ok: false, msg: `Item #${i + 1}: Please enter Gold rate / g (e.g. 7500)` };
     }
-    if (taxInp && taxInp.value.trim() === '') taxInp.value = '0';
+    rateInp.value = rateClean;
+
+    const mkClean = cleanNum(mkInp?.value);
+    const mkVal = parseFloat(mkClean || '0');
+    if (mtSel?.value === 'PERCENT') {
+      if (mkVal > 100) {
+        highlightError(mkInp);
+        return { ok: false, msg: `Item #${i + 1}: Making % cannot exceed 100% (you entered ${mkClean}%). If you intended ₹${mkClean} in rupees, select "Fixed ₹" under Making type.` };
+      }
+    }
+    if (mkInp) mkInp.value = mkClean || '0';
+
+    if (scInp) scInp.value = cleanNum(scInp.value) || '0';
+    if (ocInp) ocInp.value = cleanNum(ocInp.value) || '0';
+    if (dcInp) dcInp.value = cleanNum(dcInp.value) || '0';
+    if (taxInp) taxInp.value = cleanNum(taxInp.value) || '0';
   }
   return { ok: true };
 }
@@ -100,6 +137,24 @@ document.addEventListener('change', e => {
     const item = e.target.closest('.item');
     const nameInp = item?.querySelector('[data-k="name"]');
     if (nameInp) nameInp.value = e.target.value;
+  }
+  if (e.target.dataset?.k === 'makingType') {
+    const item = e.target.closest('.item');
+    const mkInp = item?.querySelector('[data-k="making"]');
+    const label = mkInp?.parentElement;
+    if (mkInp && label) {
+      const type = e.target.value;
+      if (type === 'PERCENT') {
+        label.childNodes[0].nodeValue = 'Making charge (%) ';
+        mkInp.placeholder = 'e.g. 10 or 12.5%';
+      } else if (type === 'PER_GRAM') {
+        label.childNodes[0].nodeValue = 'Making charge (₹/g) ';
+        mkInp.placeholder = 'e.g. 450';
+      } else {
+        label.childNodes[0].nodeValue = 'Making charge (Fixed ₹) ';
+        mkInp.placeholder = 'e.g. 500';
+      }
+    }
   }
 });
 async function go(v) {

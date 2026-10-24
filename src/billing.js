@@ -2,35 +2,68 @@
 // All money is integer paise; weights are integer milligrams. No floats in financial maths.
 const B = BigInt;
 function mulDiv(a, b, c) { return Number((B(a) * B(b) * 2n + B(c)) / (2n * B(c))); } // round half up (non-negative)
-function parseDec(v, dp, maxInt, label) {
-  const s = String(v ?? '').trim();
-  if (!new RegExp('^\\d{1,' + maxInt + '}(\\.\\d{1,' + dp + '})?$').test(s)) throw new Error('Invalid ' + label);
-  const [a, b = ''] = s.split('.');
+function cleanNumberStr(v) {
+  let s = String(v ?? '').trim();
+  s = s.replace(/^(₹|rs\.?|\$)\s*/i, '');
+  s = s.replace(/[\s,₹$%]/g, '');
+  s = s.replace(/(g|gm|grams|kg|\/-)$/i, '');
+  return s.trim();
+}
+
+function parseDec(v, dp, maxInt, label, { allowEmptyZero = false } = {}) {
+  let s = cleanNumberStr(v);
+  if (!s || s === '') {
+    if (allowEmptyZero) return 0;
+    throw new Error('Invalid ' + label);
+  }
+  if (!/^\d+(\.\d+)?$/.test(s)) throw new Error('Invalid ' + label);
+  let [a, b = ''] = s.split('.');
+  if (a.length > maxInt) throw new Error('Invalid ' + label);
+  if (b.length > dp) {
+    const factor = 10 ** dp;
+    return Math.round(Number(s) * factor);
+  }
   return Number(a) * 10 ** dp + Number(b.padEnd(dp, '0'));
 }
-const mg = (v, l = 'weight') => parseDec(v, 3, 6, l);
-const paise = (v, l = 'amount') => parseDec(v, 2, 10, l);
-const bps = (v, l = 'rate') => { const x = parseDec(v, 2, 3, l); if (x > 10000) throw new Error('Invalid ' + l); return x; };
+
+const mg = (v, l = 'weight') => parseDec(v, 3, 6, l, { allowEmptyZero: false });
+const paise = (v, l = 'amount', allowZero = true) => parseDec(v, 2, 10, l, { allowEmptyZero: allowZero });
+const bps = (v, l = 'rate') => {
+  if (v === undefined || v === null) return 0;
+  const s = cleanNumberStr(v);
+  if (s === '') throw new Error('Invalid ' + l);
+  if (s === '0') return 0;
+  const num = parseFloat(s);
+  if (isNaN(num) || num < 0) throw new Error('Invalid ' + l);
+  if (num > 100) {
+    throw new Error(l === 'making %'
+      ? 'Making % cannot exceed 100%. If you want fixed rupees, select "Fixed ₹".'
+      : 'Rate cannot exceed 100%');
+  }
+  return Math.round(num * 100);
+};
 
 function calcItem(i) {
-  const gross = mg(i.grossWeight, 'gross weight'), stone = mg(i.stoneWeight || '0', 'stone weight');
+  const gross = mg(i.grossWeight, 'gross weight');
   if (gross === 0) throw new Error('Gross weight must be greater than zero');
+  const stone = parseDec(i.stoneWeight || '0', 3, 6, 'stone weight', { allowEmptyZero: true });
   if (stone >= gross) throw new Error('Stone weight must be less than gross weight');
-  const net = gross - stone, rate = paise(i.rate, 'gold rate');
+  const net = gross - stone, rate = paise(i.rate, 'gold rate', false);
   if (rate === 0) throw new Error('Gold rate must be greater than zero');
-  const gold = mulDiv(net, rate, 1000), type = i.makingType || 'FIXED', mk = i.making || '0';
-  let making;
-  if (type === 'FIXED') making = paise(mk, 'making charge');
+  const gold = mulDiv(net, rate, 1000), type = i.makingType || 'FIXED';
+  const mk = (i.making !== undefined && i.making !== null && String(i.making).trim() !== '') ? i.making : '0';
+  let making = 0;
+  if (type === 'FIXED') making = paise(mk, 'making charge', true);
   else if (type === 'PERCENT') making = mulDiv(gold, bps(mk, 'making %'), 10000);
-  else if (type === 'PER_GRAM') making = mulDiv(net, paise(mk, 'making per gram'), 1000);
+  else if (type === 'PER_GRAM') making = mulDiv(net, paise(mk, 'making per gram', true), 1000);
   else throw new Error('Invalid making charge type');
-  const stoneCharge = paise(i.stoneCharge || '0', 'stone charge'), other = paise(i.otherCharge || '0', 'other charge');
+  const stoneCharge = paise(i.stoneCharge || '0', 'stone charge', true), other = paise(i.otherCharge || '0', 'other charge', true);
   const amount = gold + making + stoneCharge + other;
-  const discount = paise(i.discount || '0', 'discount');
+  const discount = paise(i.discount || '0', 'discount', true);
   if (discount > amount) throw new Error('Discount exceeds item amount');
-  const taxable = amount - discount, taxBps = bps(i.taxPercent, 'tax rate');
+  const taxable = amount - discount, taxBps = bps(i.taxPercent ?? '0', 'tax rate');
   const tax = mulDiv(taxable, taxBps, 10000);
-  return { name: String(i.name || '').trim(), category: i.category || 'Other jewellery', description: String(i.description || '').trim(),
+  return { name: String(i.name || i.category || 'Gold Jewellery').trim(), category: i.category || 'Other jewellery', description: String(i.description || '').trim(),
     grossMg: gross, stoneMg: stone, netMg: net, ratePaise: rate, goldValue: gold, makingType: type, makingPaise: making,
     stonePaise: stoneCharge, otherPaise: other, amountPaise: amount, discountPaise: discount, taxablePaise: taxable, taxBps, taxPaise: tax,
     finalPaise: taxable + tax };
