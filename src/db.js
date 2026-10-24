@@ -1,7 +1,10 @@
 'use strict';
 const { DatabaseSync } = require('node:sqlite');
-const fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');
-const dir = process.env.VJ_DATA_DIR || path.join(process.env.APPDATA || path.join(os.homedir(), '.vinchurkar'), 'VinchurkarBilling');
+const isVercel = !!process.env.VERCEL;
+const defaultDir = isVercel
+  ? path.join(os.tmpdir(), 'VinchurkarBilling')
+  : path.join(process.env.APPDATA || path.join(os.homedir(), '.vinchurkar'), 'VinchurkarBilling');
+const dir = process.env.VJ_DATA_DIR || defaultDir;
 fs.mkdirSync(path.join(dir, 'backups'), { recursive: true, mode: 0o700 });
 const db = new DatabaseSync(path.join(dir, 'billing.db'));
 db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL;');
