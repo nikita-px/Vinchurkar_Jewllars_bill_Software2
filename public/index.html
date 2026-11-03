@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vinchurkar Jewellers Billing</title>
+<style>
+:root{--ivory:#FFFDF7;--gold:#B8902F;--gold2:#E9D9A6;--ink:#2B2B2B;--line:#E6DFCB;--bad:#A33}
+*{box-sizing:border-box}body{margin:0;background:var(--ivory);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,sans-serif}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;color:var(--gold);margin:.2em 0}
+#auth{max-width:420px;margin:7vh auto;padding:28px;border:1px solid var(--line);background:#fff;border-radius:10px}
+#app{display:none;min-height:100vh}nav{width:210px;background:#fff;border-right:1px solid var(--line);padding:18px 12px;position:fixed;top:0;bottom:0}
+nav button{display:block;width:100%;text-align:left;margin:4px 0;background:none;border:0;padding:10px 12px;border-radius:6px;cursor:pointer;font:inherit}
+nav button.on,nav button:hover{background:var(--gold2)}main{margin-left:210px;padding:24px;max-width:1200px}
+label{display:block;font-size:12px;margin-top:10px;color:#666}input,select,textarea{width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff}
+button.p{background:var(--gold);color:#fff;border:0;padding:9px 16px;border-radius:6px;cursor:pointer;font:inherit;margin-top:12px}button.s{background:#fff;border:1px solid var(--gold);color:var(--gold);padding:5px 10px;border-radius:6px;cursor:pointer}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:12px 0}.card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px}
+.card b{display:block;font-size:22px;color:var(--ink)}table{width:100%;border-collapse:collapse;background:#fff}th{background:var(--gold);color:#fff;text-align:left}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);font-size:13px}.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.err{color:var(--bad);margin-top:8px}.ok{color:#2a7a3a}.item{border:1px solid var(--line);background:#fff;padding:10px;border-radius:8px;margin:8px 0}
+.warn{background:#FFF4D6;border:1px solid var(--gold2);padding:8px;border-radius:6px;font-size:13px}a{color:var(--gold);cursor:pointer}
+@media(max-width:760px){nav{position:static;width:auto;display:flex;flex-wrap:wrap}main{margin:0}}
+</style></head><body><div id="auth"></div>
+<div id="app"><nav><h2>Vinchurkar<br>Jewellers</h2>
+<button data-v="dash">Dashboard</button><button data-v="bill">New Bill</button><button data-v="search">Search Bill</button>
+<button data-v="history">Invoice History</button><button data-v="reports">Reports</button><button data-v="settings">Settings</button>
+<button id="lock">Lock / Sign out</button></nav><main id="main"></main></div>
+<script src="app.js"></script></body></html>
