@@ -1,8 +1,14 @@
 'use strict';
 const { DatabaseSync } = require('node:sqlite');
 const fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');
-const dir = process.env.VJ_DATA_DIR || path.join(process.env.APPDATA || path.join(os.homedir(), '.vinchurkar'), 'VinchurkarBilling');
-fs.mkdirSync(path.join(dir, 'backups'), { recursive: true, mode: 0o700 });
+let dir = process.env.VJ_DATA_DIR || path.join(process.env.APPDATA || path.join(os.homedir(), '.vinchurkar'), 'VinchurkarBilling');
+try {
+  fs.mkdirSync(path.join(dir, 'backups'), { recursive: true, mode: 0o700 });
+} catch (err) {
+  // If specified VJ_DATA_DIR (e.g. /data) is not writable, fallback to user home directory
+  dir = path.join(os.homedir(), '.vinchurkar', 'VinchurkarBilling');
+  fs.mkdirSync(path.join(dir, 'backups'), { recursive: true, mode: 0o700 });
+}
 const db = new DatabaseSync(path.join(dir, 'billing.db'));
 db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL;');
 db.exec(`

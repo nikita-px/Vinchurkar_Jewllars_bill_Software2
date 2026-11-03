@@ -1,0 +1,23 @@
+app = 'vinchurkar-jewllars-bill-software2'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  HOST = '0.0.0.0'
+  PORT = '8080'
+  NODE_ENV = 'production'
+  NODE_OPTIONS = '--experimental-sqlite'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
